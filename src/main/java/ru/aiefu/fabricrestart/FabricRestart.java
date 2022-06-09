@@ -2,7 +2,7 @@ package ru.aiefu.fabricrestart;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import net.fabricmc.api.DedicatedServerModInitializer;
-import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.server.MinecraftServer;
 import org.slf4j.Logger;
@@ -43,7 +43,7 @@ public class FabricRestart implements DedicatedServerModInitializer {
 			}
 		});
 		ServerLifecycleEvents.SERVER_STOPPING.register(server -> executor.shutdown());
-		CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> ModCommands.register(dispatcher));
+		CommandRegistrationCallback.EVENT.register((dispatcher, context, dedicated) -> ModCommands.register(dispatcher));
 	}
 
 	private void readConfiguration(MinecraftServer server) throws Exception {

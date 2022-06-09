@@ -1,10 +1,10 @@
 package ru.aiefu.fabricrestart;
 
-import net.minecraft.ChatFormatting;
-import net.minecraft.Util;
-import net.minecraft.network.chat.ChatType;
-import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.message.MessageType;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.text.Style;
+import net.minecraft.text.Text;
+import net.minecraft.text.TextColor;
 
 import java.lang.management.ManagementFactory;
 import java.util.concurrent.TimeUnit;
@@ -63,8 +63,8 @@ public class ServerWatcher {
         } else tpsWatcherTimer = 0;
         if(tpsWatcherTimer > tpsDelay && !tpsWatcherTriggered){
             if(!killInstantly) {
-                server.getPlayerList().getPlayers().forEach(playerEntity -> playerEntity
-                        .sendMessage(new TextComponent(killMsg).withStyle(ChatFormatting.RED), ChatType.SYSTEM,Util.NIL_UUID));
+                server.getPlayerManager().getPlayerList().forEach(playerEntity -> playerEntity
+                        .sendMessage(Text.literal(killMsg).setStyle(Style.EMPTY.withColor(TextColor.parse("RED"))), MessageType.SYSTEM));
                 initiateShutdown(server, System.currentTimeMillis() + 20000, false);
             } else initiateShutdown(server, 0, true);
             tpsWatcherTriggered = true;
@@ -75,8 +75,8 @@ public class ServerWatcher {
         com.sun.management.OperatingSystemMXBean sys = (com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
         if(sys.getFreeMemorySize() < memThreshold && !memWatcherTriggered){
             if(!killInstantlyM) {
-                server.getPlayerList().getPlayers().forEach(playerEntity -> playerEntity
-                        .sendMessage(new TextComponent(memKillMsg).withStyle(ChatFormatting.RED), ChatType.SYSTEM, Util.NIL_UUID));
+                server.getPlayerManager().getPlayerList().forEach(playerEntity -> playerEntity
+                        .sendMessage(Text.literal(memKillMsg).setStyle(Style.EMPTY.withColor(TextColor.parse("RED"))), MessageType.SYSTEM));
                 initiateShutdown(server, System.currentTimeMillis() + 20000, false);
             } else initiateShutdown(server, 0, true);
             memWatcherTriggered = true;
@@ -88,7 +88,7 @@ public class ServerWatcher {
             if (rda != null) {
                 rda.setRestartTime(ms);
                 rda.disableMessages();
-            } else FabricRestart.executor.schedule(() -> server.halt(false), 20L, TimeUnit.SECONDS);
-        } else server.halt(false);
+            } else FabricRestart.executor.schedule(() -> server.stop(false), 20L, TimeUnit.SECONDS);
+        } else server.stop(false);
     }
 }

@@ -1,13 +1,13 @@
 package ru.aiefu.fabricrestart;
 
-import net.minecraft.ChatFormatting;
-import net.minecraft.Util;
-import net.minecraft.network.chat.ChatType;
-import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.message.MessageType;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.Style;
+import net.minecraft.text.Text;
+import net.minecraft.text.TextColor;
 
 import java.util.HashMap;
 import java.util.List;
@@ -50,7 +50,7 @@ public class RestartDataHolder {
         if(!triggered) {
             triggered = true;
             //server.getPlayerList().getPlayers().forEach(p -> p.connection.disconnect(new TextComponent(disconnectMessage)));
-            server.halt(false);
+            server.stop(false);
         }
     }
 
@@ -62,7 +62,7 @@ public class RestartDataHolder {
 
     private void tryCountdown(MinecraftServer server, long currentMillis){
         if(currentMillis > countdown){
-            server.getPlayerList().broadcastMessage(new TextComponent(String.format(countdownMsg, (restart_time - currentMillis) / 1000)).withStyle(ChatFormatting.RED), ChatType.SYSTEM, Util.NIL_UUID);
+            server.getPlayerManager().broadcast(Text.literal(String.format(countdownMsg, (restart_time - currentMillis) / 1000)).setStyle(Style.EMPTY.withColor(TextColor.parse("RED"))), MessageType.SYSTEM);
         }
     }
 
@@ -105,9 +105,9 @@ public class RestartDataHolder {
 
         private void nextMsg(MinecraftServer server, long currentMillis){
             if(!disableMsgs && currentMillis > nextMsg){
-                server.getPlayerList().broadcastMessage(new TextComponent(msgs.get(nextMsg)).withStyle(ChatFormatting.GREEN), ChatType.SYSTEM, Util.NIL_UUID);
-                for(ServerPlayer p : server.getPlayerList().getPlayers()){
-                    p.playNotifySound(SoundEvents.NOTE_BLOCK_PLING, SoundSource.MASTER, 1.0F, 1.0F);
+                server.getPlayerManager().broadcast(Text.literal(msgs.get(nextMsg)).setStyle(Style.EMPTY.withColor(TextColor.parse("GREEN"))), MessageType.SYSTEM);
+                for(ServerPlayerEntity p : server.getPlayerManager().getPlayerList()){
+                    p.playSound(SoundEvents.BLOCK_NOTE_BLOCK_CHIME, SoundCategory.MASTER, 1.0F, 1.0F);
                 }
                 int j = position + 1;
                 if(j < msgs.size()){

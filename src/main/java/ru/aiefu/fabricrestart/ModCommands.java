@@ -2,9 +2,9 @@ package ru.aiefu.fabricrestart;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
-import net.minecraft.network.chat.TextComponent;
+import net.minecraft.server.command.CommandManager;
+import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.text.Text;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
@@ -17,36 +17,36 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 public class ModCommands {
-    public static void register(CommandDispatcher<CommandSourceStack> dispatcher){
-        dispatcher.register(Commands.literal("restart").requires(stack -> stack.hasPermission(4)).executes(context -> restart(context.getSource())));
+    public static void register(CommandDispatcher<ServerCommandSource> dispatcher){
+        dispatcher.register(CommandManager.literal("restart").requires(stack -> stack.hasPermissionLevel(4)).executes(context -> restart(context.getSource())));
 
-        dispatcher.register(Commands.literal("restart-when").executes(context -> getTimeUntilRestart(context.getSource())));
-        dispatcher.register(Commands.literal("memory-stat").requires(source -> source.hasPermission(4))
-                .then(Commands.argument("type", StringArgumentType.string()).executes(context -> memoryStat(context.getSource(), StringArgumentType.getString(context,"type")))));
-        dispatcher.register(Commands.literal("getTPS").executes(context -> getTPS(context.getSource())));
+        dispatcher.register(CommandManager.literal("restart-when").executes(context -> getTimeUntilRestart(context.getSource())));
+        dispatcher.register(CommandManager.literal("memory-stat").requires(source -> source.hasPermissionLevel(4))
+                .then(CommandManager.argument("type", StringArgumentType.string()).executes(context -> memoryStat(context.getSource(), StringArgumentType.getString(context,"type")))));
+        dispatcher.register(CommandManager.literal("getTPS").executes(context -> getTPS(context.getSource())));
     }
 
-    private static int restart(CommandSourceStack source){
+    private static int restart(ServerCommandSource source){
         if (FabricRestart.rdata == null || !FabricRestart.rdata.isScriptEnabled()) {
             FabricRestart.registerShutdownHook();
         }
-        source.getServer().halt(false);
+        source.getServer().stop(false);
         return 0;
     }
 
-    private static int getTimeUntilRestart(CommandSourceStack source){
+    private static int getTimeUntilRestart(ServerCommandSource source){
         if(FabricRestart.rdata != null) {
-            source.sendSuccess(new TextComponent("Restart time: " + LocalDateTime.
+            source.sendFeedback(Text.literal("Restart time: " + LocalDateTime.
                     ofEpochSecond(FabricRestart.rdata.getRestartTime() / 1000, 0, OffsetDateTime.
                             now().getOffset()).format(DateTimeFormatter.ofPattern("HH:mm"))
             ), false);
             System.out.println(FabricRestart.rdata.getRestartTime());
         }
-        else source.sendSuccess(new TextComponent("Auto-restart is disabled"), false);
+        else source.sendFeedback(Text.literal("Auto-restart is disabled"), false);
         return 0;
     }
 
-    private static int memoryStat(CommandSourceStack source, String arg){
+    private static int memoryStat(ServerCommandSource source, String arg){
         MemoryMXBean mxMem = ManagementFactory.getMemoryMXBean();
         switch (arg) {
             case "offheap" -> {
@@ -54,10 +54,10 @@ public class ModCommands {
                 long used = memoryUsage.getUsed();
                 long committed = memoryUsage.getCommitted();
                 com.sun.management.OperatingSystemMXBean sys = (com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
-                source.sendSuccess(new TextComponent("Offheap Usage: "), false);
-                source.sendSuccess(new TextComponent("Used: " + formatBytesToReadable(used)), false);
-                source.sendSuccess(new TextComponent("Reserved by JVM: " + formatBytesToReadable(committed)), false);
-                source.sendSuccess(new TextComponent("Total memory usage exclude heap: " + formatBytesToReadable(sys.getCommittedVirtualMemorySize() - mxMem.getHeapMemoryUsage().getCommitted())), false);
+                source.sendFeedback(Text.literal("Offheap Usage: "), false);
+                source.sendFeedback(Text.literal("Used: " + formatBytesToReadable(used)), false);
+                source.sendFeedback(Text.literal("Reserved by JVM: " + formatBytesToReadable(committed)), false);
+                source.sendFeedback(Text.literal("Total memory usage exclude heap: " + formatBytesToReadable(sys.getCommittedVirtualMemorySize() - mxMem.getHeapMemoryUsage().getCommitted())), false);
             }
             case "heap" -> {
                 MemoryUsage memoryUsage = mxMem.getHeapMemoryUsage();
@@ -65,27 +65,27 @@ public class ModCommands {
                 long committed = memoryUsage.getCommitted();
                 long max = memoryUsage.getMax();
                 com.sun.management.OperatingSystemMXBean sys = (com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
-                source.sendSuccess(new TextComponent("Heap Usage: "), false);
-                source.sendSuccess(new TextComponent("Used: " + formatBytesToReadable(used)), false);
-                source.sendSuccess(new TextComponent("Reserved by JVM: " + formatBytesToReadable(committed)), false);
-                source.sendSuccess(new TextComponent("Maximum Possible: " + formatBytesToReadable(max)), false);
-                source.sendSuccess(new TextComponent("Total JVM Process Consumption: " + formatBytesToReadable(sys.getCommittedVirtualMemorySize())), false);
+                source.sendFeedback(Text.literal("Heap Usage: "), false);
+                source.sendFeedback(Text.literal("Used: " + formatBytesToReadable(used)), false);
+                source.sendFeedback(Text.literal("Reserved by JVM: " + formatBytesToReadable(committed)), false);
+                source.sendFeedback(Text.literal("Maximum Possible: " + formatBytesToReadable(max)), false);
+                source.sendFeedback(Text.literal("Total JVM Process Consumption: " + formatBytesToReadable(sys.getCommittedVirtualMemorySize())), false);
             }
             case "system" -> {
                 com.sun.management.OperatingSystemMXBean sys = (com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
                 long totalMemory = sys.getTotalMemorySize();
                 long freeMemory = sys.getFreeMemorySize();
-                source.sendSuccess(new TextComponent("Memory: " + formatBytesToReadable(totalMemory - freeMemory) + "/" + formatBytesToReadable(totalMemory)), false);
-                source.sendSuccess(new TextComponent("Free Memory: " + formatBytesToReadable(freeMemory)), false);
+                source.sendFeedback(Text.literal("Memory: " + formatBytesToReadable(totalMemory - freeMemory) + "/" + formatBytesToReadable(totalMemory)), false);
+                source.sendFeedback(Text.literal("Free Memory: " + formatBytesToReadable(freeMemory)), false);
             }
-            default -> source.sendFailure(new TextComponent("Wrong argument, available arguments are: heap, offheap, system"));
+            default -> source.sendError(Text.literal("Wrong argument, available arguments are: heap, offheap, system"));
         }
         return 0;
     }
 
-    private static int getTPS(CommandSourceStack source){
+    private static int getTPS(ServerCommandSource source){
         String formatted = new DecimalFormat("#.##", DecimalFormatSymbols.getInstance(Locale.ENGLISH)).format(((ITPS)source.getServer()).getAverageTPS());
-        source.sendSuccess(new TextComponent("TPS: " + formatted), false);
+        source.sendFeedback(Text.literal("TPS: " + formatted), false);
         return 0;
     }
 

@@ -19,15 +19,15 @@ public class PlayerCountTracker {
 
 
     public void playersChecker(MinecraftServer server){
-        if(server.getTickCount() % 3000 == 0 && server.getPlayerList().getPlayers().size() < 1) {
+        if(server.getTicks() % 3000 == 0 && server.getPlayerManager().getPlayerList().size() < 1) {
             long currentTime = System.currentTimeMillis();
             if(currentTime > graceTime) {
                 if (afterLastPlayer) {
                     if (currentTime > targetTime) {
-                        server.halt(false);
+                        server.stop(false);
                     }
                 } else if (currentTime > serverStartTime + delay) {
-                    server.halt(false);
+                    server.stop(false);
                 }
             }
         }
